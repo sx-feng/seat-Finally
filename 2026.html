@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <title>班级座位自助抽签助手</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", system-ui, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background-color: #f0f4fc;
+            padding: 8px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        .header-box {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        @media (min-width:768px){
+            .header-box{
+                flex-direction:row;
+                justify-content:space-between;
+                align-items:center;
+            }
+        }
+        h1 {
+            font-size: 18px;
+            color:#1f2937;
+            margin:0;
+        }
+        .header-box p {
+            color:#6b7280;
+            margin:2px 0 0;
+            font-size:12px;
+        }
+        .stat-group {
+            display:flex;
+            gap:6px;
+            flex-wrap: wrap;
+        }
+        .stat-tag {
+            background:#fff;
+            padding:4px 8px;
+            border-radius:99px;
+            font-size:12px;
+            color:#4b5563;
+            box-shadow: 0 1px 3px #00000017;
+        }
+        .control-card{
+            background:#fff;
+            border-radius:12px;
+            padding:12px;
+            margin-bottom:12px;
+            box-shadow:0 2px 10px #00000012;
+        }
+        .input-row{
+            display:flex;
+            gap:6px;
+            align-items:center;
+            flex-wrap:wrap;
+        }
+        #stuNameInput{
+            padding:8px 10px;
+            border:1px solid #d1d5db;
+            border-radius:6px;
+            font-size:14px;
+            flex:1;
+            min-width:120px;
+        }
+        button{
+            padding:8px 10px;
+            border-radius:6px;
+            border:none;
+            cursor:pointer;
+            font-size:13px;
+            transition:0.2s;
+            white-space:nowrap;
+        }
+        button:disabled{
+            opacity:0.6;
+            cursor:not-allowed;
+        }
+        .btn-primary{
+            background:#4f46e5;
+            color:white;
+        }
+        .btn-reset{
+            background:#dc2626;
+            color:#ffffff;
+        }
+        .btn-admin{
+            background:#10b981;
+            color:#fff;
+        }
+        .blackboard{
+            width:90%;
+            height:24px;
+            background:#2c423b;
+            border-radius:4px;
+            margin:0 auto 12px;
+            position:relative;
+        }
+        @media (min-width:768px){
+            .blackboard{
+                width:60%;
+            }
+        }
+        .blackboard::after{
+            content:"";
+            position:absolute;
+            bottom:-4px;
+            left:10%;
+            width:80%;
+            height:4px;
+            background:#d4a066;
+            border-radius:2px;
+        }
+        .seat-area{
+            background:#fff;
+            border-radius:12px;
+            padding:12px 6px;
+            box-shadow:0 2px 10px #00000012;
+            margin-bottom:12px;
+        }
+        .row-wrap{
+            display:flex !important;
+            align-items:center;
+            gap:4px;
+            margin-bottom:8px;
+            flex-wrap:wrap; /*手机自动换行*/
+        }
+        .row-label{
+            width:36px;
+            text-align:center;
+            color:#6b7280;
+            font-weight:500;
+            font-size:11px;
+            flex-shrink:0;
+        }
+        .seat-group{
+            display:flex;
+            gap:3px;
+            flex-wrap:wrap;
+        }
+        /* 座位格子：手机小尺寸，电脑稍大 */
+        .seat-card{
+            width:42px;
+            height:42px;
+            border-radius:4px;
+            border:1px dashed #c9cde0;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+            font-size:10px;
+            color:#6b7280;
+            background:#f8f9fc;
+            flex-shrink:0;
+        }
+        @media (min-width:768px) {
+            .seat-card{
+                width:54px;
+                height:54px;
+                font-size:11px;
+            }
+        }
+        .seat-card.occupied{
+            background:#4f46e5;
+            color:#fff;
+            border:none;
+            font-weight:bold;
+        }
+        .two-col{
+            display:grid;
+            grid-template-columns:1fr;
+            gap:12px;
+        }
+        @media (min-width:768px){
+            .two-col{
+                grid-template-columns:1fr 1fr;
+            }
+        }
+        .list-card{
+            background:#fff;
+            border-radius:12px;
+            padding:12px;
+            box-shadow:0 2px 10px #00000012;
+        }
+        .list-card h3, .list-card h4{
+            margin-top:0;
+            font-size:15px;
+            color:#374151;
+            margin-bottom:8px;
+        }
+        .name-tag-wrap{
+            display:flex;
+            flex-wrap:wrap;
+            gap:4px;
+        }
+        .name-tag{
+            background:#edeffb;
+            color:#3730a3;
+            padding:3px 6px;
+            border-radius:4px;
+            font-size:11px;
+        }
+        table{
+            width:100%;
+            border-collapse: collapse;
+            font-size:12px;
+        }
+        table th,table td{
+            text-align:left;
+            padding:4px 3px;
+            border-bottom:1px solid #eee;
+        }
+        .msg-tip{
+            margin-top:8px;
+            font-weight:bold;
+            font-size:13px;
+        }
+        .admin-panel{
+            margin-top:12px;
+            background:#fff;
+            border-radius:12px;
+            padding:12px;
+            box-shadow:0 2px 10px #00000012;
+            display:none;
+        }
+        .admin-panel h3{
+            margin-top:0;
+            font-size:16px;
+        }
+        /* ===== 登录弹窗样式 ===== */
+        .modal-mask{
+            position:fixed;
+            inset:0;
+            background:rgba(0,0,0,0.5);
+            display:none;
+            align-items:center;
+            justify-content:center;
+            z-index:999;
+        }
+        .modal-box{
+            background:#fff;
+            border-radius:10px;
+            padding:16px;
+            width:90%;
+            max-width:340px;
+        }
+        .modal-box h3{
+            margin-top:0;
+            font-size:16px;
+        }
+        .modal-item{
+            margin-bottom:12px;
+        }
+        .modal-item label{
+            display:block;
+            margin-bottom:3px;
+            font-size:13px;
+        }
+        .modal-item input{
+            width:100%;
+            padding:8px;
+            border:1px solid #d1d5db;
+            border-radius:6px;
+        }
+        .modal-buttons{
+            display:flex;
+            gap:8px;
+            justify-content:flex-end;
+            margin-top:12px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-box">
+        <div>
+            <h1>🎲班级座位自助抽签助手</h1>
+            <p>第1/2/3排每排10人，第4排6人，共36座位</p>
+        </div>
+        <div class="stat-group">
+            <div class="stat-tag">已抽：<span id="drawnCount">0</span>/36</div>
+            <div class="stat-tag">剩余座位：<span id="leftSeat">36</span></div>
+        </div>
+    </div>
+    <div class="control-card">
+        <div class="input-row">
+            <input type="text" id="stuNameInput" placeholder="请输入你的姓名">
+            <button class="btn-primary" id="btnDraw">✨我要抽签</button>
+            <button class="btn-reset" id="btnReset">🔄重置</button>
+            <button class="btn-admin" id="btnAdmin">📋后台</button>
+        </div>
+        <div class="msg-tip" id="msgBox"></div>
+    </div>
+    <div class="seat-area">
+        <div class="blackboard"></div>
+        <div class="row-wrap">
+            <div class="row-label">第1排</div>
+            <div class="seat-group">
+                <div class="seat-card" data-seat="1">1<br>待抽</div>
+                <div class="seat-card" data-seat="2">2<br>待抽</div>
+                <div class="seat-card" data-seat="3">3<br>待抽</div>
+                <div class="seat-card" data-seat="4">4<br>待抽</div>
+                <div class="seat-card" data-seat="5">5<br>待抽</div>
+                <div class="seat-card" data-seat="6">6<br>待抽</div>
+                <div class="seat-card" data-seat="7">7<br>待抽</div>
+                <div class="seat-card" data-seat="8">8<br>待抽</div>
+                <div class="seat-card" data-seat="9">9<br>待抽</div>
+                <div class="seat-card" data-seat="10">10<br>待抽</div>
+            </div>
+        </div>
+        <div class="row-wrap">
+            <div class="row-label">第2排</div>
+            <div class="seat-group">
+                <div class="seat-card" data-seat="11">11<br>待抽</div>
+                <div class="seat-card" data-seat="12">12<br>待抽</div>
+                <div class="seat-card" data-seat="13">13<br>待抽</div>
+                <div class="seat-card" data-seat="14">14<br>待抽</div>
+                <div class="seat-card" data-seat="15">15<br>待抽</div>
+                <div class="seat-card" data-seat="16">16<br>待抽</div>
+                <div class="seat-card" data-seat="17">17<br>待抽</div>
+                <div class="seat-card" data-seat="18">18<br>待抽</div>
+                <div class="seat-card" data-seat="19">19<br>待抽</div>
+                <div class="seat-card" data-seat="20">20<br>待抽</div>
+            </div>
+        </div>
+        <div class="row-wrap">
+            <div class="row-label">第3排</div>
+            <div class="seat-group">
+                <div class="seat-card" data-seat="21">21<br>待抽</div>
+                <div class="seat-card" data-seat="22">22<br>待抽</div>
+                <div class="seat-card" data-seat="23">23<br>待抽</div>
+                <div class="seat-card" data-seat="24">24<br>待抽</div>
+                <div class="seat-card" data-seat="25">25<br>待抽</div>
+                <div class="seat-card" data-seat="26">26<br>待抽</div>
+                <div class="seat-card" data-seat="27">27<br>待抽</div>
+                <div class="seat-card" data-seat="28">28<br>待抽</div>
+                <div class="seat-card" data-seat="29">29<br>待抽</div>
+                <div class="seat-card" data-seat="30">30<br>待抽</div>
+            </div>
+        </div>
+        <div class="row-wrap">
+            <div class="row-label">第4排</div>
+            <div class="seat-group">
+                <div class="seat-card" data-seat="31">31<br>待抽</div>
+                <div class="seat-card" data-seat="32">32<br>待抽</div>
+                <div class="seat-card" data-seat="33">33<br>待抽</div>
+                <div class="seat-card" data-seat="34">34<br>待抽</div>
+                <div class="seat-card" data-seat="35">35<br>待抽</div>
+                <div class="seat-card" data-seat="36">36<br>待抽</div>
+            </div>
+        </div>
+    </div>
+    <!-- 前台：已完成抽签同学 -->
+    <div class="list-card">
+        <h3>✅已完成抽签同学</h3>
+        <div class="name-tag-wrap" id="drawnNameList"></div>
+    </div>
+
+    <!-- 后台面板：未抽签名单 + 座位分配明细表 -->
+    <div class="admin-panel" id="adminPanel">
+        <h3>🔧后台管理面板</h3>
+        <div class="two-col">
+            <div class="list-card">
+                <h4>📌还未抽签学生名单</h4>
+                <div class="name-tag-wrap" id="remainStudentList"></div>
+            </div>
+            <div class="list-card">
+                <h4>📋座位分配明细表</h4>
+                <table>
+                    <thead>
+                        <tr><th>座位号</th><th>位置</th><th>姓名</th></tr>
+                    </thead>
+                    <tbody id="adminSeatTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 重置登录弹窗 -->
+<div class="modal-mask" id="loginModal">
+    <div class="modal-box">
+        <h3>管理员登录（重置抽签）</h3>
+        <div class="modal-item">
+            <label>PB管理员邮箱</label>
+            <input type="email" id="adminEmail" placeholder="输入users集合邮箱">
+        </div>
+        <div class="modal-item">
+            <label>PB管理员密码</label>
+            <input type="password" id="adminPwd" placeholder="输入密码">
+        </div>
+        <div class="modal-buttons">
+            <button id="modalCancel">取消</button>
+            <button class="btn-reset" id="modalConfirm">确认重置</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const PB_URL = "https://pocketbase-bjglfsep.sealosbja.site";
+const studentCollection = "studentList";
+const seatCollection = "seatList";
+
+const seatInfo = {
+    1:"第1排｜左1",2:"第1排｜左2",
+    3:"第1排｜中间1",4:"第1排｜中间2",5:"第1排｜中间3",6:"第1排｜中间4",7:"第1排｜中间5",8:"第1排｜中间6",
+    9:"第1排｜右1",10:"第1排｜右2",
+    11:"第2排｜左1",12:"第2排｜左2",
+    13:"第2排｜中间1",14:"第2排｜中间2",15:"第2排｜中间3",16:"第2排｜中间4",17:"第2排｜中间5",18:"第2排｜中间6",
+    19:"第2排｜右1",20:"第2排｜右2",
+    21:"第3排｜左1",22:"第3排｜左2",
+    23:"第3排｜中间1",24:"第3排｜中间2",25:"第3排｜中间3",26:"第3排｜中间4",27:"第3排｜中间5",28:"第3排｜中间6",
+    29:"第3排｜右1",30:"第3排｜右2",
+    31:"第4排｜座位1",32:"第4排｜座位2",33:"第4排｜座位3",34:"第4排｜座位4",35:"第4排｜座位5",36:"第4排｜座位6"
+};
+
+let allSeatData = [];
+let allStudentData = [];
+let adminToken = "";
+
+const msgBox = document.getElementById("msgBox");
+const stuNameInput = document.getElementById("stuNameInput");
+const btnDraw = document.getElementById("btnDraw");
+const btnReset = document.getElementById("btnReset");
+const btnAdmin = document.getElementById("btnAdmin");
+const loginModal = document.getElementById("loginModal");
+const modalCancel = document.getElementById("modalCancel");
+const modalConfirm = document.getElementById("modalConfirm");
+const adminEmail = document.getElementById("adminEmail");
+const adminPwd = document.getElementById("adminPwd");
+
+//提取数字函数，解决NaN问题
+function getPureNumber(str){
+    if(!str) return null;
+    const match = String(str).match(/\d+/);
+    return match ? Number(match[0]) : null;
+}
+
+async function bootApp(){
+    await loadDbData();
+    bindEvent();
+}
+document.addEventListener('DOMContentLoaded', bootApp);
+window.addEventListener('load', bootApp);
+
+async function loadDbData(){
+    msgBox.innerText = "正在加载数据...";
+    try{
+        const seatRes = await fetch(`${PB_URL}/api/collections/${seatCollection}/records?perPage=100`);
+        allSeatData = (await seatRes.json()).items;
+
+        const stuRes = await fetch(`${PB_URL}/api/collections/${studentCollection}/records?perPage=100`);
+        allStudentData = (await stuRes.json()).items;
+
+        msgBox.innerText = "";
+        refreshUI();
+    }catch(e){
+        msgBox.style.color="#dc2626";
+        msgBox.innerText="数据库读取失败，请检查PB地址与跨域";
+        console.error(e);
+    }
+}
+
+async function selfDraw(){
+    const name = stuNameInput.value.trim();
+    if(!name){
+        msgBox.style.color="#dc2626";
+        msgBox.innerText="⚠️请输入你的姓名！";
+        return;
+    }
+    btnDraw.disabled=true;
+    msgBox.innerText="";
+
+    const filterName = encodeURIComponent(`name="${name}"`);
+    const stuResp = await fetch(`${PB_URL}/api/collections/${studentCollection}/records?filter=${filterName}`);
+    const stuJson = await stuResp.json();
+    const stuFind = stuJson.items?.[0];
+
+    if(!stuFind){
+        msgBox.style.color="#dc2626";
+        msgBox.innerText=`❌【${name}】不在本班名单内，无法抽签！`;
+        btnDraw.disabled=false;
+        return;
+    }
+    if(stuFind.isDrawed){
+        const seatFilter = encodeURIComponent(`studentName="${name}"`);
+        const seatResp = await fetch(`${PB_URL}/api/collections/${seatCollection}/records?filter=${seatFilter}`);
+        const seatJson = await seatResp.json();
+        const usedSeat = seatJson.items?.[0];
+        if(usedSeat){
+            const seatNum = getPureNumber(usedSeat.seatNo);
+            msgBox.style.color="#4f46e5";
+            msgBox.innerText=`✅你已经抽过座位！座位：${seatNum}｜${seatInfo[seatNum]}`;
+        }else{
+            msgBox.style.color="#dc2626";
+            msgBox.innerText=`⚠️数据异常，已标记抽签但无座位，请联系老师重置`;
+        }
+        btnDraw.disabled=false;
+        await loadDbData();
+        return;
+    }
+
+    const seatFilterEmpty = encodeURIComponent(`studentName=""`);
+    const seatRes = await fetch(`${PB_URL}/api/collections/${seatCollection}/records?filter=${seatFilterEmpty}`);
+    const seatJson = await seatRes.json();
+    const emptySeats = seatJson.items || [];
+    if(emptySeats.length===0){
+        msgBox.style.color="#16a34a";
+        msgBox.innerText="✅所有座位已经全部抽取完毕！";
+        btnDraw.disabled=false;
+        return;
+    }
+
+    const randomItem = emptySeats[Math.floor(Math.random()*emptySeats.length)];
+    const seatNumber = getPureNumber(randomItem.seatNo);
+
+    await fetch(`${PB_URL}/api/collections/${seatCollection}/records/${randomItem.id}`,{
+        method:"PATCH",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            studentName:name,
+            drawTime: new Date().toISOString()
+        })
+    });
+    await fetch(`${PB_URL}/api/collections/${studentCollection}/records/${stuFind.id}`,{
+        method:"PATCH",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({isDrawed:true})
+    });
+
+    msgBox.style.color="#16a34a";
+    msgBox.innerText=`🎉恭喜 ${name}！抽到座位【${seatNumber}｜${seatInfo[seatNumber]}】`;
+    stuNameInput.value="";
+    await loadDbData();
+    btnDraw.disabled=false;
+}
+
+async function resetAllData(){
+    const email = adminEmail.value.trim();
+    const pwd = adminPwd.value.trim();
+    if(!email || !pwd){
+        alert("邮箱和密码不能为空");
+        return;
+    }
+    if(!confirm("⚠️确认重置？所有抽签记录清空，无法恢复！")) return;
+
+    btnReset.disabled=true;
+    msgBox.innerText="正在登录管理员账号...";
+    try{
+        const loginResp = await fetch(`${PB_URL}/api/collections/users/auth-with-password`,{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                identity:email,
+                password:pwd
+            })
+        });
+        const loginJson = await loginResp.json();
+        if(!loginJson.token){
+            msgBox.style.color="#dc2626";
+            msgBox.innerText="❌邮箱或密码错误，登录失败";
+            btnReset.disabled=false;
+            loginModal.style.display="none";
+            return;
+        }
+        adminToken = loginJson.token;
+        msgBox.innerText="正在重置所有座位和学生抽签状态...";
+
+        const stuList = await fetch(`${PB_URL}/api/collections/${studentCollection}/records?perPage=200`);
+        const stuItems = (await stuList.json()).items;
+        for(let s of stuItems){
+            await fetch(`${PB_URL}/api/collections/${studentCollection}/records/${s.id}`,{
+                method:"PATCH",
+                headers:{
+                    "Content-Type":"application/json",
+                    "Authorization":adminToken
+                },
+                body:JSON.stringify({isDrawed:false})
+            })
+        }
+        const seatList = await fetch(`${PB_URL}/api/collections/${seatCollection}/records?perPage=200`);
+        const seatItems = (await seatList.json()).items;
+        for(let seat of seatItems){
+            await fetch(`${PB_URL}/api/collections/${seatCollection}/records/${seat.id}`,{
+                method:"PATCH",
+                headers:{
+                    "Content-Type":"application/json",
+                    "Authorization":adminToken
+                },
+                body:JSON.stringify({studentName:"",drawTime:null})
+            })
+        }
+        msgBox.style.color="#16a34a";
+        msgBox.innerText="✅全部抽签数据重置完成！";
+        loginModal.style.display="none";
+        adminEmail.value="";
+        adminPwd.value="";
+        await loadDbData();
+    }catch(err){
+        msgBox.style.color="#dc2626";
+        msgBox.innerText="❌重置失败！检查账号密码、集合Update权限";
+        console.error(err);
+        loginModal.style.display="none";
+    }finally{
+        btnReset.disabled=false;
+    }
+}
+
+function refreshUI(){
+    document.querySelectorAll(".seat-card").forEach(card=>{
+        const seatId = Number(card.dataset.seat);
+        const seatData = allSeatData.find(item=> getPureNumber(item.seatNo) === seatId);
+        if(seatData && seatData.studentName){
+            card.classList.add("occupied");
+            card.innerHTML = `${seatId}<br>${seatData.studentName}`;
+        }else{
+            card.classList.remove("occupied");
+            card.innerHTML = `${seatId}<br>待抽`;
+        }
+    });
+    const drawnList = allSeatData.filter(s=>s.studentName);
+    document.getElementById("drawnCount").innerText = drawnList.length;
+    document.getElementById("leftSeat").innerText = 36 - drawnList.length;
+
+    const drawnNameWrap = document.getElementById("drawnNameList");
+    drawnNameWrap.innerHTML = "";
+    drawnList.forEach(seat=>{
+        const tag = document.createElement("span");
+        tag.className="name-tag";
+        tag.innerText = seat.studentName;
+        drawnNameWrap.appendChild(tag);
+    })
+
+    const adminSeatTbody = document.getElementById("adminSeatTableBody");
+    adminSeatTbody.innerHTML="";
+    allSeatData.forEach(seat=>{
+        const num = getPureNumber(seat.seatNo);
+        const posText = seatInfo[num] ?? "未知位置";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${num}</td><td>${posText}</td><td>${seat.studentName || '-'}</td>`;
+        adminSeatTbody.appendChild(tr);
+    })
+
+    const remainWrap = document.getElementById("remainStudentList");
+    remainWrap.innerHTML="";
+    const remainStudents = allStudentData.filter(s=>!s.isDrawed);
+    remainStudents.forEach(stu=>{
+        const tag = document.createElement("span");
+        tag.className="name-tag";
+        tag.innerText = stu.name;
+        remainWrap.appendChild(tag);
+    })
+}
+
+function bindEvent(){
+    btnDraw.addEventListener("click", selfDraw);
+    btnAdmin.addEventListener("click",()=>{
+        const panel = document.getElementById("adminPanel");
+        panel.style.display = panel.style.display === "none" ? "block" : "none";
+    });
+    btnReset.addEventListener("click",()=>{
+        loginModal.style.display="flex";
+        adminEmail.focus();
+    });
+    modalCancel.addEventListener("click",()=>{
+        loginModal.style.display="none";
+        adminEmail.value="";
+        adminPwd.value="";
+    });
+    modalConfirm.addEventListener("click",resetAllData);
+    stuNameInput.addEventListener("keydown",function(e){
+        if(e.key === "Enter") selfDraw();
+    })
+}
+</script>
+</body>
+</html>
+<!-- （注：内容由AI生成） -->
